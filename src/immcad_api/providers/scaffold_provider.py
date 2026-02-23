@@ -9,7 +9,15 @@ class ScaffoldProvider:
 
     name = "scaffold"
 
-    def generate(self, *, message: str, citations: list[Citation], locale: str) -> ProviderResult:
+    def generate(
+        self,
+        *,
+        message: str,
+        citations: list[Citation],
+        locale: str,
+        grounding_context: list[str] | None = None,
+    ) -> ProviderResult:
+        del grounding_context
         answer = (
             "Scaffold response: this environment is using deterministic fallback content. "
             "Replace provider adapters with production SDK integrations. "

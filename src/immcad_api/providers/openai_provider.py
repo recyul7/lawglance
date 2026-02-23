@@ -29,7 +29,14 @@ class OpenAIProvider:
         self.timeout_seconds = timeout_seconds
         self.max_retries = max(0, max_retries)
 
-    def generate(self, *, message: str, citations: list[Citation], locale: str) -> ProviderResult:
+    def generate(
+        self,
+        *,
+        message: str,
+        citations: list[Citation],
+        locale: str,
+        grounding_context: list[str] | None = None,
+    ) -> ProviderResult:
         if not self.api_key:
             raise ProviderError(self.name, "provider_error", "OPENAI_API_KEY not configured")
 
@@ -40,6 +47,14 @@ class OpenAIProvider:
             f"User locale: {locale}. "
             f"Question: {message.strip()}"
         )
+        if grounding_context:
+            context_lines = "\n".join(f"- {snippet}" for snippet in grounding_context)
+            prompt = (
+                f"{prompt}\n"
+                "Grounding context snippets:\n"
+                f"{context_lines}\n"
+                "Use only the context above for factual legal statements."
+            )
 
         answer = ""
         last_error: ProviderError | None = None

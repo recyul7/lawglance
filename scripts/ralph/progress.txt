@@ -33,3 +33,22 @@ Started: 2026-02-23
   - Gotcha: `make` is not installed in this environment, so `make quality` must be executed via the Makefile command sequence manually and in order.
   - Useful context: Updating story `passes` flags requires `tests/test_ralph_prd_json.py` to validate boolean shape instead of enforcing all stories as incomplete.
 ---
+## 2026-02-23 19:06:10 -0300 - US-007
+- Wired `ChatService` to run retrieval before provider generation for grounded factual modes, map retrieved documents into shared citation objects, and pass grounding snippets into provider generation.
+- Files changed
+- `src/immcad_api/retrieval.py`
+- `src/immcad_api/services/chat_service.py`
+- `src/immcad_api/providers/base.py`
+- `src/immcad_api/providers/router.py`
+- `src/immcad_api/providers/openai_provider.py`
+- `src/immcad_api/providers/gemini_provider.py`
+- `src/immcad_api/providers/scaffold_provider.py`
+- `tests/test_chat_service.py`
+- `tests/test_provider_router_circuit_breaker.py`
+- `scripts/ralph/prd.json`
+- `scripts/ralph/progress.txt`
+- Learnings for future iterations:
+  - Reusable pattern: keep retriever output normalized (`RetrievedDocument`) and centralize citation conversion in one mapper so chat and provider paths share a single source of truth.
+  - Gotcha: `make` is not available in this environment; run the exact `quality` target commands from `Makefile` in-order to preserve gate equivalence.
+  - Useful context: provider prompt grounding can be threaded as an optional `grounding_context` argument through router/provider interfaces without breaking fallback and circuit-breaker behavior.
+---

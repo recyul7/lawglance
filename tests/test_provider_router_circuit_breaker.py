@@ -11,7 +11,15 @@ class _FailingProvider:
     code: str = "provider_error"
     message: str = "provider failed"
 
-    def generate(self, *, message: str, citations, locale: str) -> ProviderResult:
+    def generate(
+        self,
+        *,
+        message: str,
+        citations,
+        locale: str,
+        grounding_context: list[str] | None = None,
+    ) -> ProviderResult:
+        del message, citations, locale, grounding_context
         raise ProviderError(self.name, self.code, self.message)
 
 
@@ -20,7 +28,15 @@ class _FlakyProvider:
     name: str
     fail_once: bool = True
 
-    def generate(self, *, message: str, citations, locale: str) -> ProviderResult:
+    def generate(
+        self,
+        *,
+        message: str,
+        citations,
+        locale: str,
+        grounding_context: list[str] | None = None,
+    ) -> ProviderResult:
+        del message, locale, grounding_context
         if self.fail_once:
             self.fail_once = False
             raise ProviderError(self.name, "provider_error", "temporary failure")
@@ -32,11 +48,42 @@ class _SuccessProvider:
     name: str
     answer: str = "fallback answer"
 
-    def generate(self, *, message: str, citations, locale: str) -> ProviderResult:
+    def generate(
+        self,
+        *,
+        message: str,
+        citations,
+        locale: str,
+        grounding_context: list[str] | None = None,
+    ) -> ProviderResult:
+        del message, locale, grounding_context
         return ProviderResult(
             provider=self.name,
             answer=self.answer,
             citations=citations,
+            confidence="medium",
+        )
+
+
+@dataclass
+class _CapturingProvider:
+    name: str
+    received_context: list[str] | None = None
+
+    def generate(
+        self,
+        *,
+        message: str,
+        citations,
+        locale: str,
+        grounding_context: list[str] | None = None,
+    ) -> ProviderResult:
+        del message, citations, locale
+        self.received_context = grounding_context
+        return ProviderResult(
+            provider=self.name,
+            answer="ok",
+            citations=[],
             confidence="medium",
         )
 
@@ -116,3 +163,22 @@ def test_router_resets_circuit_after_window() -> None:
 
     metrics = router.telemetry_snapshot()
     assert metrics["openai"]["success"] == 1
+
+
+def test_router_forwards_grounding_context() -> None:
+    provider = _CapturingProvider(name="openai")
+    router = ProviderRouter(
+        [provider],
+        "openai",
+        circuit_breaker_failure_threshold=3,
+        circuit_breaker_open_seconds=30.0,
+    )
+
+    router.generate(
+        message="q",
+        citations=[],
+        locale="en-CA",
+        grounding_context=["snippet one", "snippet two"],
+    )
+
+    assert provider.received_context == ["snippet one", "snippet two"]

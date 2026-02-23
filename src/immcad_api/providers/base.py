@@ -25,5 +25,12 @@ class ProviderResult:
 class Provider(Protocol):
     name: str
 
-    def generate(self, *, message: str, citations: list[Citation], locale: str) -> ProviderResult:
+    def generate(
+        self,
+        *,
+        message: str,
+        citations: list[Citation],
+        locale: str,
+        grounding_context: list[str] | None = None,
+    ) -> ProviderResult:
         ...
